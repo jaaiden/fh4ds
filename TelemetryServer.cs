@@ -17,6 +17,18 @@ namespace FH4TelemetryServer
         AWD = 2
     }
 
+    public enum ECarClass
+    {
+        E = 0,
+        D = 1,
+        C = 2,
+        B = 3,
+        A = 4,
+        S1 = 5,
+        S2 = 6,
+        X = 7
+    }
+
     public struct TelemetryData
     {
         public int IsRaceOn { get; set; } // 1 when race is on. = 0 when in menus/race stopped
@@ -100,7 +112,7 @@ namespace FH4TelemetryServer
         public float SuspensionTravelRearRight { get; set; }
 
         public int CarOrdinal { get; set; } // Unique ID of the car make/model
-        public int CarClass { get; set; } // Between 0 (D class) and 7 (X class) - inclusive
+        public ECarClass CarClass { get; set; } // Between 0 (D class) and 7 (X class) - inclusive
         public int CarPI { get; set; } // 100-999 - inclusive
         public EDrivetrainType DrivetrainType { get; set; } // FWD/RWD/AWD
         public int NumCylinders { get; set; } // Number of cylinders in the engine
@@ -153,9 +165,9 @@ namespace FH4TelemetryServer
         {
             try
             {
-                ep = new IPEndPoint(IPAddress.Any, port);
+                ep = new IPEndPoint(IPAddress.Loopback, port);
                 udpClient = new UdpClient(ep);
-                udpClient.BeginReceive(UdpReceive, null);
+                udpClient.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
             }
             catch (Exception e)
             {
@@ -163,304 +175,141 @@ namespace FH4TelemetryServer
             }
         }
 
+        public void Start()
+        {
+            Console.WriteLine($"Listening on {ep.Address.ToString()}:{ep.Port}");
+            udpClient.BeginReceive(new AsyncCallback(UdpReceive), null);
+        }
+
         private void UdpReceive(IAsyncResult ar)
         {
             byte[] data = udpClient.EndReceive(ar, ref ep);
-            udpClient.BeginReceive(UdpReceive, null);
             LastUpdate = CreateDataStruct(data);
             PrintData();
+            Console.Read();
+            udpClient.BeginReceive(new AsyncCallback(UdpReceive), null);
         }
 
-        private void PrintData ()
+        private void PrintData()
         {
             // First clear the console
             Console.Clear();
 
             // Print car ID and name (if it exists)
-            Console.WriteLine($"ID: {LastUpdate.CarOrdinal}\t{VehicleDB.GetVehicle(LastUpdate.CarOrdinal).ToString()}");
+            Console.WriteLine($"ID: {LastUpdate.CarOrdinal}\t{VehicleDB.GetVehicle(LastUpdate.CarOrdinal).ToString()} [ {LastUpdate.CarClass.ToString()} | {LastUpdate.CarPI} ]");
         }
 
         private TelemetryData CreateDataStruct(byte[] data)
         {
-            int pos = 0;
             TelemetryData td = new TelemetryData();
 
-            td.IsRaceOn = data[pos];
-            pos += 4;
-
-            td.TimestampMS = data[pos];
-            pos += 4;
-
-
-            td.EngineMaxRPM = data[pos];
-            pos += 4;
-
-            td.EngineIdleRPM = data[pos];
-            pos += 4;
-
-            td.EngineCurrentRPM = data[pos];
-            pos += 4;
-
-
-            td.AccelerationX = data[pos];
-            pos += 4;
-
-            td.AccelerationY = data[pos];
-            pos += 4;
-
-            td.AccelerationZ = data[pos];
-            pos += 4;
-
-
-            td.VelocityX = data[pos];
-            pos += 4;
-
-            td.VelocityY = data[pos];
-            pos += 4;
-
-            td.VelocityZ = data[pos];
-            pos += 4;
-
-
-            td.AngularVelocityX = data[pos];
-            pos += 4;
-
-            td.AngularVelocityY = data[pos];
-            pos += 4;
-
-            td.AngularVelocityZ = data[pos];
-            pos += 4;
-
-
-            td.Yaw = data[pos];
-            pos += 4;
-
-            td.Pitch = data[pos];
-            pos += 4;
-
-            td.Roll = data[pos];
-            pos += 4;
-
-
-            td.NormalizedSuspensionTravelFrontLeft = data[pos];
-            pos += 4;
-
-            td.NormalizedSuspensionTravelFrontRight = data[pos];
-            pos += 4;
-
-            td.NormalizedSuspensionTravelRearLeft = data[pos];
-            pos += 4;
-
-            td.NormalizedSuspensionTravelRearRight = data[pos];
-            pos += 4;
-
-
-            td.TireSlipRatioFrontLeft = data[pos];
-            pos += 4;
-
-            td.TireSlipRatioFrontRight = data[pos];
-            pos += 4;
-
-            td.TireSlipRatioRearLeft = data[pos];
-            pos += 4;
-
-            td.TireSlipRatioRearRight = data[pos];
-            pos += 4;
-
-
-            td.WheelRotationSpeedFrontLeft = data[pos];
-            pos += 4;
-
-            td.WheelRotationSpeedFrontRight = data[pos];
-            pos += 4;
-
-            td.WheelRotationSpeedRearLeft = data[pos];
-            pos += 4;
-
-            td.WheelRotationSpeedRearRight = data[pos];
-            pos += 4;
-
-
-            td.WheelOnRumbleStripFrontLeft = data[pos];
-            pos += 4;
-
-            td.WheelOnRumbleStripFrontRight = data[pos];
-            pos += 4;
-
-            td.WheelOnRumbleStripRearLeft = data[pos];
-            pos += 4;
-
-            td.WheelOnRumbleStripRearRight = data[pos];
-            pos += 4;
-
-
-            td.WheelInPuddleDepthFrontLeft = data[pos];
-            pos += 4;
-
-            td.WheelInPuddleDepthFrontRight = data[pos];
-            pos += 4;
-
-            td.WheelInPuddleDepthRearLeft = data[pos];
-            pos += 4;
-
-            td.WheelInPuddleDepthRearRight = data[pos];
-            pos += 4;
-
-
-            td.SurfaceRumbleFrontLeft = data[pos];
-            pos += 4;
-
-            td.SurfaceRumbleFrontRight = data[pos];
-            pos += 4;
-
-            td.SurfaceRumbleRearLeft = data[pos];
-            pos += 4;
-
-            td.SurfaceRumbleRearRight = data[pos];
-            pos += 4;
-
-
-            td.TireSlipAngleFrontLeft = data[pos];
-            pos += 4;
-
-            td.TireSlipAngleFrontRight = data[pos];
-            pos += 4;
-
-            td.TireSlipAngleRearLeft = data[pos];
-            pos += 4;
-
-            td.TireSlipAngleRearRight = data[pos];
-            pos += 4;
-
-
-            td.TireCombinedSlipFrontLeft = data[pos];
-            pos += 4;
-
-            td.TireCombinedSlipFrontRight = data[pos];
-            pos += 4;
-
-            td.TireCombinedSlipRearLeft = data[pos];
-            pos += 4;
-
-            td.TireCombinedSlipRearRight = data[pos];
-            pos += 4;
-
-
-            td.SuspensionTravelFrontLeft = data[pos];
-            pos += 4;
-
-            td.SuspensionTravelFrontRight = data[pos];
-            pos += 4;
-
-            td.SuspensionTravelRearLeft = data[pos];
-            pos += 4;
-
-            td.SuspensionTravelRearRight = data[pos];
-            pos += 4;
-
-
-            td.CarOrdinal = data[pos];
-            pos += 4;
-
-            td.CarClass = data[pos];
-            pos += 4;
-
-            td.CarPI = data[pos];
-            pos += 4;
-
-            td.DrivetrainType = (EDrivetrainType)data[pos];
-            pos += 4;
-
-            td.NumCylinders = data[pos];
-            pos += 4;
-
-
-            td.PositionX = data[pos];
-            pos += 4;
-
-            td.PositionY = data[pos];
-            pos += 4;
-
-            td.PositionZ = data[pos];
-            pos += 4;
-
-
-            td.Speed = data[pos];
-            pos += 4;
-
-            td.Power = data[pos];
-            pos += 4;
-
-            td.Torque = data[pos];
-            pos += 4;
-
-
-            td.TireTempFrontLeft = data[pos];
-            pos += 4;
-
-            td.TireTempFrontRight = data[pos];
-            pos += 4;
-
-            td.TireTempRearLeft = data[pos];
-            pos += 4;
-
-            td.TireTempRearRight = data[pos];
-            pos += 4;
-
-
-            td.Boost = data[pos];
-            pos += 4;
-
-            td.Fuel = data[pos];
-            pos += 4;
-
-            td.DistanceTraveled = data[pos];
-            pos += 4;
-
-            td.BestLap = data[pos];
-            pos += 4;
-
-            td.LastLap = data[pos];
-            pos += 4;
-
-            td.CurrentLap = data[pos];
-            pos += 4;
-
-            td.CurrentRaceTime = data[pos];
-            pos += 4;
-
-
-            td.LapNumber = data[pos];
-            pos += 2;
-
-            td.RacePosition = data[pos];
-            pos += 1;
-
-
-            td.Accel = data[pos];
-            pos += 1;
-
-            td.Brake = data[pos];
-            pos += 1;
-
-            td.Clutch = data[pos];
-            pos += 1;
-
-            td.Handbrake = data[pos];
-            pos += 1;
-
-            td.Gear = data[pos];
-            pos += 1;
-
-            td.Steer = (sbyte)data[pos];
-            pos += 1;
-
-
-            td.NormalizedDrivingLine = (sbyte)data[pos];
-            pos += 1;
-
-            td.NormalizedAIBrakeDifference = (sbyte)data[pos];
-            pos += 1;
+            td.IsRaceOn = BitConverter.ToInt32(data, 0);
+            td.TimestampMS = BitConverter.ToUInt32(data, 4);
+
+            td.EngineMaxRPM = BitConverter.ToSingle(data, 8);
+            td.EngineIdleRPM = BitConverter.ToSingle(data, 12);
+            td.EngineCurrentRPM = BitConverter.ToSingle(data, 16);
+
+            td.AccelerationX = BitConverter.ToSingle(data, 20);
+            td.AccelerationY = BitConverter.ToSingle(data, 24);
+            td.AccelerationZ = BitConverter.ToSingle(data, 28);
+
+            td.VelocityX = BitConverter.ToSingle(data, 32);
+            td.VelocityY = BitConverter.ToSingle(data, 36);
+            td.VelocityZ = BitConverter.ToSingle(data, 40);
+
+            td.AngularVelocityX = BitConverter.ToSingle(data, 44);
+            td.AngularVelocityY = BitConverter.ToSingle(data, 48);
+            td.AngularVelocityZ = BitConverter.ToSingle(data, 52);
+
+            td.Yaw = BitConverter.ToSingle(data, 56);
+            td.Pitch = BitConverter.ToSingle(data, 60);
+            td.Roll = BitConverter.ToSingle(data, 64);
+
+            td.NormalizedSuspensionTravelFrontLeft = BitConverter.ToSingle(data, 68);
+            td.NormalizedSuspensionTravelFrontRight = BitConverter.ToSingle(data, 72);
+            td.NormalizedSuspensionTravelRearLeft = BitConverter.ToSingle(data, 76);
+            td.NormalizedSuspensionTravelRearRight = BitConverter.ToSingle(data, 80);
+
+            td.TireSlipRatioFrontLeft = BitConverter.ToSingle(data, 84);
+            td.TireSlipRatioFrontRight = BitConverter.ToSingle(data, 88);
+            td.TireSlipRatioRearLeft = BitConverter.ToSingle(data, 92);
+            td.TireSlipRatioRearRight = BitConverter.ToSingle(data, 96);
+
+            td.WheelRotationSpeedFrontLeft = BitConverter.ToSingle(data, 100);
+            td.WheelRotationSpeedFrontRight = BitConverter.ToSingle(data, 104);
+            td.WheelRotationSpeedRearLeft = BitConverter.ToSingle(data, 108);
+            td.WheelRotationSpeedRearRight = BitConverter.ToSingle(data, 112);
+
+            td.WheelOnRumbleStripFrontLeft = BitConverter.ToInt32(data, 116);
+            td.WheelOnRumbleStripFrontRight = BitConverter.ToInt32(data, 120);
+            td.WheelOnRumbleStripRearLeft = BitConverter.ToInt32(data, 124);
+            td.WheelOnRumbleStripRearRight = BitConverter.ToInt32(data, 128);
+
+            td.WheelInPuddleDepthFrontLeft = BitConverter.ToSingle(data, 132);
+            td.WheelInPuddleDepthFrontRight = BitConverter.ToSingle(data, 136);
+            td.WheelInPuddleDepthRearLeft = BitConverter.ToSingle(data, 140);
+            td.WheelInPuddleDepthRearRight = BitConverter.ToSingle(data, 144);
+
+            td.SurfaceRumbleFrontLeft = BitConverter.ToSingle(data, 148);
+            td.SurfaceRumbleFrontRight = BitConverter.ToSingle(data, 152);
+            td.SurfaceRumbleRearLeft = BitConverter.ToSingle(data, 156);
+            td.SurfaceRumbleRearRight = BitConverter.ToSingle(data, 160);
+
+            td.TireSlipAngleFrontLeft = BitConverter.ToSingle(data, 164);
+            td.TireSlipAngleFrontRight = BitConverter.ToSingle(data, 168);
+            td.TireSlipAngleRearLeft = BitConverter.ToSingle(data, 172);
+            td.TireSlipAngleRearRight = BitConverter.ToSingle(data, 176);
+
+            td.TireCombinedSlipFrontLeft = BitConverter.ToSingle(data, 180);
+            td.TireCombinedSlipFrontRight = BitConverter.ToSingle(data, 184);
+            td.TireCombinedSlipRearLeft = BitConverter.ToSingle(data, 188);
+            td.TireCombinedSlipRearRight = BitConverter.ToSingle(data, 192);
+
+            td.SuspensionTravelFrontLeft = BitConverter.ToSingle(data, 196);
+            td.SuspensionTravelFrontRight = BitConverter.ToSingle(data, 200);
+            td.SuspensionTravelRearLeft = BitConverter.ToSingle(data, 204);
+            td.SuspensionTravelRearRight = BitConverter.ToSingle(data, 208);
+
+            td.CarOrdinal = BitConverter.ToInt32(data, 212);
+
+            td.CarClass = (ECarClass)BitConverter.ToInt32(data, 216);
+            td.CarPI = BitConverter.ToInt32(data, 220);
+            td.DrivetrainType = (EDrivetrainType)BitConverter.ToInt32(data, 224);
+            td.NumCylinders = BitConverter.ToInt32(data, 228);
+
+            td.PositionX = BitConverter.ToSingle(data, 232);
+            td.PositionY = BitConverter.ToSingle(data, 236);
+            td.PositionZ = BitConverter.ToSingle(data, 240);
+
+            td.Speed = BitConverter.ToSingle(data, 244);
+            td.Power = BitConverter.ToSingle(data, 248);
+            td.Torque = BitConverter.ToSingle(data, 252);
+
+            td.TireTempFrontLeft = BitConverter.ToSingle(data, 256);
+            td.TireTempFrontRight = BitConverter.ToSingle(data, 260);
+            td.TireTempRearLeft = BitConverter.ToSingle(data, 264);
+            td.TireTempRearRight = BitConverter.ToSingle(data, 268);
+
+            td.Boost = BitConverter.ToSingle(data, 272);
+            td.Fuel = BitConverter.ToSingle(data, 276);
+            td.DistanceTraveled = BitConverter.ToSingle(data, 280);
+
+            td.BestLap = BitConverter.ToSingle(data, 284);
+            td.LastLap = BitConverter.ToSingle(data, 288);
+            td.CurrentLap = BitConverter.ToSingle(data, 292);
+            td.CurrentRaceTime = BitConverter.ToSingle(data, 296);
+            td.LapNumber = BitConverter.ToUInt16(data, 300);
+
+            td.RacePosition = data[302];
+            td.Accel = data[303];
+            td.Brake = data[304];
+            td.Clutch = data[305];
+            td.Handbrake = data[306];
+            td.Gear = data[307];
+            td.Steer = (sbyte)data[308];
+            td.NormalizedDrivingLine = (sbyte)data[309];
+            td.NormalizedAIBrakeDifference = (sbyte)data[310];
 
             return td;
         }

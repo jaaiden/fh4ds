@@ -7,7 +7,6 @@ namespace FH4TelemetryServer
 {
     class Program
     {
-        private static bool isRunning = true;
         private static int port = 9909;
         private static TelemetryServer server;
 
@@ -21,7 +20,7 @@ namespace FH4TelemetryServer
             {
                 string portEntry = Console.ReadLine();
                 if (portEntry != "")
-                    int.TryParse(Console.ReadLine(), out port);
+                    int.TryParse(portEntry, out port);
             }
             catch (Exception e)
             {
@@ -30,6 +29,10 @@ namespace FH4TelemetryServer
 
             // run the app - this will run forever until force stopped
             server = new TelemetryServer(port);
+            server.Start();
+
+            // Wait for keypress to close
+            Console.Read();
         }
     }
 }
