@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
+using Newtonsoft.Json;
 
 namespace FH4TelemetryServer.DataStructs
 {
@@ -20,17 +22,45 @@ namespace FH4TelemetryServer.DataStructs
             }
         }
 
-        private static Dictionary<int, Vehicle> vehicles = new Dictionary<int, Vehicle>();
+        private static Dictionary<string, Vehicle> m_Vehicles = new Dictionary<string, Vehicle>();
 
         public static void AddVehicle(int Id, Vehicle VehicleData)
         {
+            if (!m_Vehicles.Keys.Contains(Id.ToString()))
+            {
+                m_Vehicles.Add(Id.ToString(), VehicleData);
+            }
+        }
 
+        public static void LoadVehicles()
+        {
+            if (!File.Exists("vehicles.json"))
+                File.Create("vehicles.json");
+
+            Dictionary<string, Vehicle> vroomVrooms = JsonConvert.DeserializeObject<Dictionary<string, Vehicle>>(File.ReadAllText("vehicles.json"));
+
+            if (vroomVrooms != null)
+            {
+                foreach (KeyValuePair<string, Vehicle> item in vroomVrooms)
+                {
+                    AddVehicle(int.Parse(item.Key), item.Value);
+                }
+            }
+        }
+
+        public static void SaveVehiclesToFile()
+        {
+            byte[] jsonBytes = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(m_Vehicles));
+            FileStream f = File.Open("vehicles.json", FileMode.Create);
+            f.Write(jsonBytes, 0, jsonBytes.Length);
+            f.Flush();
+            f.Close();
         }
 
         public static Vehicle GetVehicle(int Id)
         {
-            if (vehicles.Keys.Contains(Id))
-                return vehicles[Id];
+            if (m_Vehicles.Keys.Contains(Id.ToString()))
+                return m_Vehicles[Id.ToString()];
             else
             {
                 return new Vehicle {

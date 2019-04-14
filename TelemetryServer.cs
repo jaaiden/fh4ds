@@ -19,14 +19,13 @@ namespace FH4TelemetryServer
 
     public enum ECarClass
     {
-        E = 0,
-        D = 1,
-        C = 2,
-        B = 3,
-        A = 4,
-        S1 = 5,
-        S2 = 6,
-        X = 7
+        D = 0,
+        C = 1,
+        B = 2,
+        A = 3,
+        S1 = 4,
+        S2 = 5,
+        X = 6
     }
 
     public struct TelemetryData
@@ -186,15 +185,11 @@ namespace FH4TelemetryServer
             byte[] data = udpClient.EndReceive(ar, ref ep);
             LastUpdate = CreateDataStruct(data);
             PrintData();
-            Console.Read();
             udpClient.BeginReceive(new AsyncCallback(UdpReceive), null);
         }
 
         private void PrintData()
         {
-            // First clear the console
-            Console.Clear();
-
             // Print car ID and name (if it exists)
             Console.WriteLine($"ID: {LastUpdate.CarOrdinal}\t{VehicleDB.GetVehicle(LastUpdate.CarOrdinal).ToString()} [ {LastUpdate.CarClass.ToString()} | {LastUpdate.CarPI} ]");
         }
